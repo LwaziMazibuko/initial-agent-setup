@@ -1,37 +1,38 @@
-```markdown
-# 💻 Project Setup: The Gemma Agentic Ecosystem
-**Goal:** To establish a robust, scalable, and modular development environment that allows a Large Language Model (Gemma) to act as an advanced coding agent, tightly integrated with the development 
-workflow.
-**Version:** 0.1.0
-**Date:** 2026-10-26
+# Master Agentic Setup & Architecture Spec
 
-## 🚀 I. Infrastructure (Phase 1)
-*   **Status:** PENDING / STARTED / COMPLETE
-*   **Goal:** Establish isolated, reliable services (LLM API, Agent Engine, Database).
-*   **Current State:** Docker setup initiated.
-*   **Key Decisions:**
-    *   **Container Strategy:** All services run in Docker containers via `docker-compose.yml`.
-    *   **Data Isolation:** Gemma API, Agent Orchestrator, and Database are distinct services.
-    *   **Project Location:** All projects are located under `/downloads/projects/`.
-    *   **Testing Project:** [personal_website] is the current test target.
+## 🎯 Objective
+To establish a modular, production-grade, local AI coding agent infrastructure running on Apple Silicon (M4) with Metal acceleration, isolated via Docker, and structured for multi-project workflows and plug-and-play model swapping.
 
-## 🧠 II. Core Services Mapping
-| Service | Role | Technology | Container Name (Target) | Communication | Key Configs |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+---
 
-| **Gemma API** | The LLM "Brain." Converts weights into a queryable API endpoint. | vLLM / Ollama | `gemma_api` | Provides internal API (e.g., `http://gemma_api:8000/generate`) | Model path, GPU 
-resource limits, Max Tokens |
+## 🏛️ System Architecture Overview
 
-| **Agent Engine** | The "Planner." Receives goals, interacts with tools, and manages the LLM loop. | Python (LangChain/AutoGen) | `agent_orchestrator` | Consumes Gemma API, utilizes `/agent_tools` | 
+1. **Inference Layer (The Brain)**: 
+   - Powered by **Ollama** running natively on the macOS host (leveraging M4 Metal GPU acceleration).
+   - Endpoint: `http://host.docker.internal:11434`
+   - Active Model: `gemma:7b` (Swappable via configuration).
 
-Agent prompt templates, Tool definitions, Database connection2 string |
+2. **Infrastructure Layer (The Containers)**:
+   - Managed via `docker-compose.yml`.
+   - **`agent_db`**: PostgreSQL container providing long-term execution and run memory logging (`agent_memory` database).
+   - **`agent_orchestrator`**: Python container executing the core loop, tool dispatch, and LLM communication.
 
-| **Database** | Memory storage for long-term context, conversation history, and project state. | PostgreSQL / Vector DB (e.g., Qdrant) | `agent_db` | Provides a persistent storage layer | Connection 
-pooling, Schema migration status |
+3. **Application & Tool Layer (The Body)**:
+   - Custom tools located in `agent_code/agent_tools.py` (`read_file`, `write_code`, `run_shell`, `run_tests`).
+   - Dynamic ReAct (Reasoning and Acting) orchestration loop handled by `agent_orchestrator.py` and `LLMProxy`.
 
-## 🛠️ III. Development Environment Checklist
-*   [ ] Git repository initialized for testing branch.
-*   [ ] Python Virtual Environment created (`venv`).
-*   [ ] Agent Tools implemented (`read_file`, `run_shell`, etc.).
-*   [ ] API Latency benchmark established (Phase 2).
-*   [ ] VS Code extension client configured.
+---
+
+## 🔌 How to Swap Models
+To swap from `gemma:7b` to another model (e.g., `llama3` or `qwen2.5-coder`):
+1. Pull the model on your host: `ollama pull <model_name>`
+2. Update the `model` parameter inside `agent_code/agent_orchestrator.py` (`self.model = "<model_name>"`).
+3. Restart the orchestrator container: `docker-compose restart agent_orchestrator`
+
+---
+
+## 🛠️ Reusing This Setup for Other Projects
+To point this agent infrastructure to a new project (e.g., `/Users/lwazi/Downloads/projects/another-project`):
+1. Mount the target project directory into the `agent_orchestrator` container via `docker-compose.yml` volumes.
+2. Ensure the project contains a local copy or symbolic link to `agent_tools.py` and the execution scripts.
+EOF

@@ -1,0 +1,4 @@
+FROM python:3.10-slim
+WORKDIR /app
+RUN pip install --no-cache-dir requests psycopg2-binary langchain langchain-community
+CMD ["tail", "-f", "/dev/null"]

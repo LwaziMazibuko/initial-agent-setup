@@ -1,0 +1,26 @@
+services:
+  # 1. The Database Service (The Long-Term Memory)
+  agent_db:
+    image: postgres:15-alpine 
+    container_name: agent_db
+    environment:
+      POSTGRES_DB: agent_memory
+      POSTGRES_USER: gemma_user
+      POSTGRES_PASSWORD: secure_password
+    volumes:
+      - ./data/db:/var/lib/postgresql/data 
+    ports:
+      - "5432:5432"
+
+  # 2. The Agent Orchestrator (Connected to Mac Host Ollama via host.docker.internal)
+  agent_orchestrator:
+    build: 
+      context: . 
+      dockerfile: Dockerfile.agent 
+    container_name: agent_orchestrator
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - agent_db
+    volumes:
+      - ./agent_code:/app 
